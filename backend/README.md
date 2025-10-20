@@ -1,168 +1,335 @@
-# InkOdyssey Backend - Authentication API
+# InkOdyssey Backend - Simple Authentication API# InkOdyssey Backend - Authentication API
 
-A comprehensive Django REST Framework backend with JWT authentication and social login (Google & Facebook).
 
-## Features
 
-✅ **Custom User Model** - Email-based authentication with first name and last name
-✅ **JWT Authentication** - Secure token-based authentication with refresh tokens
-✅ **Social Login** - Google OAuth2 and Facebook OAuth2 integration
-✅ **User Registration** - Sign up with email, password, first name, and last name
-✅ **User Login** - Email and password authentication
-✅ **Token Refresh** - Automatic token refresh for seamless sessions
-✅ **Password Change** - Secure password update for authenticated users
+A streamlined Django REST Framework backend with JWT authentication.A comprehensive Django REST Framework backend with JWT authentication and social login (Google & Facebook).
+
+
+
+## ✨ Features## Features
+
+
+
+- ✅ Email-based authentication (no username required)✅ **Custom User Model** - Email-based authentication with first name and last name
+
+- ✅ JWT tokens with automatic refresh✅ **JWT Authentication** - Secure token-based authentication with refresh tokens
+
+- ✅ User registration with email, first name, last name, password✅ **Social Login** - Google OAuth2 and Facebook OAuth2 integration
+
+- ✅ User login and logout✅ **User Registration** - Sign up with email, password, first name, and last name
+
+- ✅ User profile management✅ **User Login** - Email and password authentication
+
+- ✅ Password change functionality✅ **Token Refresh** - Automatic token refresh for seamless sessions
+
+- ✅ CORS enabled for frontend integration✅ **Password Change** - Secure password update for authenticated users
+
 ✅ **User Profile** - Get and update user details
-✅ **CORS Enabled** - Ready for frontend integration
 
-## Tech Stack
+## 🚀 Quick Start✅ **CORS Enabled** - Ready for frontend integration
 
-- **Django 4.2** - Python web framework
+
+
+```bash## Tech Stack
+
+# 1. Copy environment file
+
+cp .env.example .env- **Django 4.2** - Python web framework
+
 - **Django REST Framework** - API toolkit
-- **djangorestframework-simplejwt** - JWT authentication
-- **django-allauth** - Social authentication
+
+# 2. Run migrations (already done)- **djangorestframework-simplejwt** - JWT authentication
+
+python manage.py migrate- **django-allauth** - Social authentication
+
 - **dj-rest-auth** - REST API endpoints for auth
-- **django-cors-headers** - CORS handling
-- **python-decouple** - Configuration management
 
-## Project Structure
+# 3. Create superuser (optional)- **django-cors-headers** - CORS handling
 
-```
+python manage.py createsuperuser- **python-decouple** - Configuration management
+
+
+
+# 4. Start server## Project Structure
+
+python manage.py runserver
+
+``````
+
 backend/
-├── backend/              # Main project settings
+
+Server runs at: **http://localhost:8000**├── backend/              # Main project settings
+
 │   ├── settings.py       # Django configuration
-│   ├── urls.py          # Main URL routing
+
+## 📡 API Endpoints│   ├── urls.py          # Main URL routing
+
 │   └── wsgi.py          # WSGI configuration
-├── users/               # Users app
-│   ├── models.py        # Custom User model
-│   ├── serializers.py   # DRF serializers
-│   ├── views.py         # API views
-│   ├── urls.py          # Auth URL patterns
-│   └── admin.py         # Admin configuration
-├── manage.py            # Django management script
-├── .env.example         # Environment variables template
-└── db.sqlite3          # SQLite database
+
+| Endpoint | Method | Auth | Description |├── users/               # Users app
+
+|----------|--------|------|-------------|│   ├── models.py        # Custom User model
+
+| `/api/auth/register/` | POST | No | Register new user |│   ├── serializers.py   # DRF serializers
+
+| `/api/auth/login/` | POST | No | Login user |│   ├── views.py         # API views
+
+| `/api/auth/logout/` | POST | Yes | Logout user |│   ├── urls.py          # Auth URL patterns
+
+| `/api/auth/user/` | GET/PUT/PATCH | Yes | Get/update profile |│   └── admin.py         # Admin configuration
+
+| `/api/auth/change-password/` | POST | Yes | Change password |├── manage.py            # Django management script
+
+| `/api/auth/token/refresh/` | POST | No | Refresh JWT token |├── .env.example         # Environment variables template
+
+| `/admin/` | GET | Yes | Admin panel |└── db.sqlite3          # SQLite database
+
 ```
+
+## 📝 API Examples
 
 ## Setup Instructions
 
-### 1. Environment Setup
+### Register
 
-Copy `.env.example` to `.env` and configure:
+```bash### 1. Environment Setup
 
-```bash
-cp .env.example .env
-```
+POST /api/auth/register/
 
-Update `.env` with your credentials:
-```env
+{Copy `.env.example` to `.env` and configure:
+
+  "email": "user@example.com",
+
+  "first_name": "John",```bash
+
+  "last_name": "Doe",cp .env.example .env
+
+  "password": "SecurePass123!",```
+
+  "password2": "SecurePass123!"
+
+}Update `.env` with your credentials:
+
+``````env
+
 SECRET_KEY=your-django-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-FACEBOOK_CLIENT_ID=your-facebook-app-id
-FACEBOOK_CLIENT_SECRET=your-facebook-app-secret
-```
 
-### 2. Database Setup
+**Response:**DEBUG=True
 
-Migrations have already been applied. If you need to reset:
+```jsonALLOWED_HOSTS=localhost,127.0.0.1
 
-```bash
-python manage.py makemigrations
-python manage.py migrate
+{CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+  "user": {GOOGLE_CLIENT_ID=your-google-client-id
+
+    "id": 1,GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+    "email": "user@example.com",FACEBOOK_CLIENT_ID=your-facebook-app-id
+
+    "first_name": "John",FACEBOOK_CLIENT_SECRET=your-facebook-app-secret
+
+    "last_name": "Doe",```
+
+    "full_name": "John Doe",
+
+    "date_joined": "2025-10-15T12:00:00Z"### 2. Database Setup
+
+  },
+
+  "tokens": {Migrations have already been applied. If you need to reset:
+
+    "refresh": "eyJ0eXAiOiJKV1Qi...",
+
+    "access": "eyJ0eXAiOiJKV1Qi..."```bash
+
+  },python manage.py makemigrations
+
+  "message": "User registered successfully"python manage.py migrate
+
+}```
+
 ```
 
 ### 3. Create Superuser
 
-```bash
-python manage.py createsuperuser
-```
+### Login
 
-### 4. Run Development Server
+```bash```bash
 
-```bash
+POST /api/auth/login/python manage.py createsuperuser
+
+{```
+
+  "email": "user@example.com",
+
+  "password": "SecurePass123!"### 4. Run Development Server
+
+}
+
+``````bash
+
 python manage.py runserver
+
+### Get User Profile (Authenticated)```
+
+```bash
+
+GET /api/auth/user/The API will be available at `http://localhost:8000`
+
+Headers:
+
+  Authorization: Bearer <access_token>## API Endpoints
+
 ```
-
-The API will be available at `http://localhost:8000`
-
-## API Endpoints
 
 ### Authentication
 
-#### Register a New User
-```http
-POST /api/auth/register/
-Content-Type: application/json
+### Refresh Token
 
-{
+```bash#### Register a New User
+
+POST /api/auth/token/refresh/```http
+
+{POST /api/auth/register/
+
+  "refresh": "eyJ0eXAiOiJKV1Qi..."Content-Type: application/json
+
+}
+
+```{
+
   "email": "user@example.com",
-  "first_name": "John",
+
+## 🧪 Testing  "first_name": "John",
+
   "last_name": "Doe",
-  "password": "securepassword123",
-  "password2": "securepassword123"
-}
-```
 
-**Response:**
-```json
-{
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
+Use the included test script:  "password": "securepassword123",
+
+```bash  "password2": "securepassword123"
+
+python test_api.py}
+
+``````
+
+
+
+Or use cURL:**Response:**
+
+```bash```json
+
+curl -X POST http://localhost:8000/api/auth/register/ \{
+
+  -H "Content-Type: application/json" \  "user": {
+
+  -d '{"email":"test@example.com","first_name":"Test","last_name":"User","password":"testpass123","password2":"testpass123"}'    "id": 1,
+
+```    "email": "user@example.com",
+
     "first_name": "John",
-    "last_name": "Doe",
+
+## 🔒 Security    "last_name": "Doe",
+
     "full_name": "John Doe",
-    "date_joined": "2025-10-15T12:00:00Z",
-    "provider": null
-  },
-  "tokens": {
-    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-    "access": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-  },
-  "message": "User registered successfully"
-}
-```
 
-#### Login
-```http
-POST /api/auth/login/
+- Passwords hashed with PBKDF2    "date_joined": "2025-10-15T12:00:00Z",
+
+- JWT token authentication    "provider": null
+
+- Token blacklisting on logout  },
+
+- CORS configured  "tokens": {
+
+- Email validation    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+
+- Password strength validation    "access": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+
+  },
+
+## 🛠️ Tech Stack  "message": "User registered successfully"
+
+}
+
+- Django 4.2```
+
+- Django REST Framework
+
+- djangorestframework-simplejwt#### Login
+
+- django-cors-headers```http
+
+- python-decouplePOST /api/auth/login/
+
 Content-Type: application/json
 
+## 📖 More Documentation
+
 {
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
+
+- **QUICKSTART.md** - Quick setup guide  "email": "user@example.com",
+
+- **IMPLEMENTATION_SUMMARY.md** - Technical details  "password": "securepassword123"
+
+- **.env.example** - Environment configuration}
+
 ```
+
+## 🌐 Frontend Integration
 
 **Response:**
-```json
-{
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
-    "full_name": "John Doe"
-  },
-  "tokens": {
-    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-    "access": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-  },
-  "message": "Login successful"
-}
-```
 
-#### Refresh Token
+```javascript```json
+
+// Register{
+
+const response = await fetch('http://localhost:8000/api/auth/register/', {  "user": {
+
+  method: 'POST',    "id": 1,
+
+  headers: { 'Content-Type': 'application/json' },    "email": "user@example.com",
+
+  body: JSON.stringify({    "first_name": "John",
+
+    email: 'user@example.com',    "last_name": "Doe",
+
+    first_name: 'John',    "full_name": "John Doe"
+
+    last_name: 'Doe',  },
+
+    password: 'SecurePass123!',  "tokens": {
+
+    password2: 'SecurePass123!'    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+
+  })    "access": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+
+});  },
+
+const { user, tokens } = await response.json();  "message": "Login successful"
+
+}
+
+// Store tokens```
+
+localStorage.setItem('accessToken', tokens.access);
+
+localStorage.setItem('refreshToken', tokens.refresh);#### Refresh Token
+
 ```http
-POST /api/auth/token/refresh/
-Content-Type: application/json
 
-{
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-}
+// Authenticated requestsPOST /api/auth/token/refresh/
+
+const userResponse = await fetch('http://localhost:8000/api/auth/user/', {Content-Type: application/json
+
+  headers: {
+
+    'Authorization': `Bearer ${tokens.access}`,{
+
+    'Content-Type': 'application/json'  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+
+  }}
+
+});```
+
 ```
 
 #### Logout

@@ -48,10 +48,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
     
-    # Social auth fields
-    provider = models.CharField(max_length=50, blank=True, null=True)
-    social_id = models.CharField(max_length=255, blank=True, null=True)
-    
     objects = UserManager()
     
     USERNAME_FIELD = 'email'
