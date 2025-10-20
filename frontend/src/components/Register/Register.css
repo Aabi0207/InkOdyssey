@@ -276,6 +276,10 @@
   border-radius: 30px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  /* entrance animation to match form slide */
+  animation: fadeInRight 0.6s ease-out;
+  animation-fill-mode: both;
+  will-change: transform, opacity;
 }
 
 .register-background-image {
@@ -283,6 +287,10 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  /* smooth image fade to avoid popping when the file loads */
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out 0.05s both;
+  will-change: opacity, transform;
 }
 
 .register-quote-overlay {
@@ -318,6 +326,17 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
