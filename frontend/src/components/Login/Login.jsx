@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -58,46 +62,15 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store tokens in localStorage
-        localStorage.setItem('accessToken', data.access);
-        localStorage.setItem('refreshToken', data.refresh);
-        
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
         setSuccessMessage('Login successful! Redirecting...');
-        setFormData({
-          email: '',
-          password: '',
-        });
-        
-        // Redirect to dashboard or home page after 1.5 seconds
+        setFormData({ email: '', password: '' });
         setTimeout(() => {
-          // window.location.href = '/dashboard';
-          console.log('Redirecting to dashboard...');
-        }, 1500);
+          navigate('/dummy');
+        }, 1000);
       } else {
-        // Handle error response
-        if (data.detail) {
-          setErrors({ general: data.detail });
-        } else if (data.email) {
-          setErrors({ email: data.email[0] });
-        } else if (data.password) {
-          setErrors({ password: data.password[0] });
-        } else {
-          setErrors({ general: 'Login failed. Please check your credentials.' });
-        }
+        setErrors({ general: result.error || 'Login failed. Please check your credentials.' });
       }
     } catch (error) {
       console.error('Login error:', error);
