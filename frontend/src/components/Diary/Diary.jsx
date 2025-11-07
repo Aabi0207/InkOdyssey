@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import './Diary.css';
+import Navigation from '../Navigation/Navigation';
 
 const API_BASE_URL = 'http://localhost:8000/api/diary';
 
 const Diary = () => {
   const { accessToken, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [entries, setEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [quote, setQuote] = useState({ text: 'Loading inspiration...', author: '' });
+  const [selectedDate, setSelectedDate] = useState(
+    searchParams.get('date') || new Date().toISOString().split('T')[0]
+  );
   const [view, setView] = useState('list'); // 'list', 'detail', 'create', 'edit'
   
   // Form state
@@ -22,10 +27,13 @@ const Diary = () => {
   });
 
   // Fetch all entries
-  const fetchEntries = async () => {
+  const fetchEntries = async (date = null) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/entries/`, {
+      const url = date 
+        ? `${API_BASE_URL}/entries/by-date/?date=${date}`
+        : `${API_BASE_URL}/entries/`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
@@ -33,14 +41,43 @@ const Diary = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setEntries(data.results || data);
+        const entriesData = data.results || data;
+        console.log('Fetched entries:', entriesData);
+        setEntries(entriesData);
       } else if (response.status === 401) {
+        console.error('Unauthorized - redirecting to login');
         logout();
       }
     } catch (error) {
       console.error('Error fetching entries:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch quote from ZenQuotes
+  const fetchQuote = async () => {
+    try {
+      // Use CORS proxy to avoid CORS issues
+      const response = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://zenquotes.io/api/today'));
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote');
+      }
+      const proxyData = await response.json();
+      const data = JSON.parse(proxyData.contents);
+      
+      if (data && data[0]) {
+        setQuote({
+          text: data[0].q,
+          author: data[0].a
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+      setQuote({
+        text: 'Every day is a new page in your story.',
+        author: 'Unknown'
+      });
     }
   };
 
@@ -74,7 +111,7 @@ const Diary = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        // Stats fetched but not displayed in UI anymore
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -84,6 +121,13 @@ const Diary = () => {
   // Create new entry
   const createEntry = async (e) => {
     e.preventDefault();
+    
+    if (!accessToken) {
+      console.error('No access token available');
+      logout();
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/entries/`, {
         method: 'POST',
@@ -96,10 +140,17 @@ const Diary = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setEntries([data, ...entries]);
+        // Refetch entries to get full content
+        await fetchEntries(selectedDate);
         resetForm();
         setView('list');
         fetchStats();
+      } else if (response.status === 401) {
+        console.error('Unauthorized - token may be expired');
+        logout();
+      } else {
+        const errorData = await response.json();
+        console.error('Error creating entry:', errorData);
       }
     } catch (error) {
       console.error('Error creating entry:', error);
@@ -109,6 +160,13 @@ const Diary = () => {
   // Update entry
   const updateEntry = async (e) => {
     e.preventDefault();
+    
+    if (!accessToken) {
+      console.error('No access token available');
+      logout();
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/entries/${selectedEntry.id}/`, {
         method: 'PATCH',
@@ -121,10 +179,17 @@ const Diary = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setEntries(entries.map(entry => entry.id === data.id ? data : entry));
-        setSelectedEntry(data);
+        // Refetch entries to get updated content
+        await fetchEntries(selectedDate);
+        setSelectedEntry(null);
         setIsEditing(false);
-        setView('detail');
+        setView('list');
+      } else if (response.status === 401) {
+        console.error('Unauthorized - token may be expired');
+        logout();
+      } else {
+        const errorData = await response.json();
+        console.error('Error updating entry:', errorData);
       }
     } catch (error) {
       console.error('Error updating entry:', error);
@@ -156,34 +221,24 @@ const Diary = () => {
 
   // Fetch entries by date
   const fetchEntriesByDate = async (date) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/entries/by-date/?date=${date}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setEntries(data);
-      }
-    } catch (error) {
-      console.error('Error fetching entries by date:', error);
-    } finally {
-      setLoading(false);
-    }
+    fetchEntries(date);
   };
 
-  // Handle date filter
-  const handleDateFilter = (e) => {
-    const date = e.target.value;
+  // Handle date change
+  const handleDateChange = (date) => {
     setSelectedDate(date);
-    if (date) {
-      fetchEntriesByDate(date);
-    } else {
-      fetchEntries();
-    }
+    setSearchParams({ date });
+    fetchEntriesByDate(date);
+  };
+
+  // Format date for display
+  const formatDisplayDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   // Add content block
@@ -284,9 +339,22 @@ const Diary = () => {
   };
 
   useEffect(() => {
-    fetchEntries();
+    if (!accessToken) {
+      console.error('No access token - redirecting to login');
+      logout();
+      return;
+    }
+    
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      setSelectedDate(dateParam);
+      fetchEntriesByDate(dateParam);
+    } else {
+      fetchEntries();
+    }
+    fetchQuote();
     fetchStats();
-  }, []);
+  }, [accessToken]);
 
   if (loading && entries.length === 0) {
     return (
@@ -298,35 +366,46 @@ const Diary = () => {
 
   return (
     <div className="diary-container">
-      {/* Header */}
-      <header className="diary-header">
-        <div className="header-content">
-          <h1>📖 My Diary</h1>
-          <button onClick={logout} className="btn btn-secondary">Logout</button>
+      {/* Navigation */}
+      <Navigation />
+
+      {/* Diary Header with Logo, Quote, and Date */}
+      <header className="diary-page-header">
+        <div className="diary-header-content">
+          {/* Logo and Quote Section */}
+          <div className="diary-logo-quote-section">
+            <div className="diary-logo-section">
+              <img src="/logo.png" alt="InkOdyssey" className="diary-logo" />
+            </div>
+            
+            {/* Quote below logo */}
+            <div className="diary-quote-section">
+              <blockquote className="daily-quote">
+                <p className="quote-text">"{quote.text}"</p>
+                <cite className="quote-author">— {quote.author}</cite>
+              </blockquote>
+            </div>
+          </div>
+
+          {/* Right: Date with Calendar */}
+          <div className="diary-date-section">
+            <div className="date-display">
+              <span className="current-date">{formatDisplayDate(selectedDate)}</span>
+              <input
+                id="date-picker"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="date-picker-input"
+                title="Choose date"
+              />
+              <label htmlFor="date-picker" className="calendar-icon" title="Choose date">
+                📅
+              </label>
+            </div>
+          </div>
         </div>
       </header>
-
-      {/* Statistics Dashboard */}
-      {stats && view === 'list' && (
-        <div className="stats-dashboard">
-          <div className="stat-card">
-            <div className="stat-value">{stats.total_entries}</div>
-            <div className="stat-label">Total Entries</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.entries_this_week}</div>
-            <div className="stat-label">This Week</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.entries_this_month}</div>
-            <div className="stat-label">This Month</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.total_blocks}</div>
-            <div className="stat-label">Content Blocks</div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="diary-main">
@@ -341,37 +420,16 @@ const Diary = () => {
                 }} 
                 className="btn btn-primary"
               >
-                ✏️ New Entry
+                ✏️ New Memory
               </button>
-              <div className="date-filter">
-                <label htmlFor="date-filter">Filter by date:</label>
-                <input
-                  id="date-filter"
-                  type="date"
-                  value={selectedDate}
-                  onChange={handleDateFilter}
-                  className="date-input"
-                />
-                {selectedDate && (
-                  <button 
-                    onClick={() => {
-                      setSelectedDate('');
-                      fetchEntries();
-                    }}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
             </div>
 
             <div className="entries-list">
               {entries.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">📝</div>
-                  <h3>No entries yet</h3>
-                  <p>Start writing your first diary entry!</p>
+                  <h3>No memories for this day</h3>
+                  <p>Start capturing your thoughts and moments!</p>
                   <button 
                     onClick={() => {
                       resetForm();
@@ -379,7 +437,7 @@ const Diary = () => {
                     }} 
                     className="btn btn-primary"
                   >
-                    Create Entry
+                    Create Memory
                   </button>
                 </div>
               ) : (
@@ -387,16 +445,60 @@ const Diary = () => {
                   <div 
                     key={entry.id} 
                     className="entry-card"
-                    onClick={() => fetchEntryById(entry.id)}
                   >
                     <div className="entry-header">
                       <h3>{entry.title}</h3>
+                      <div className="entry-actions-inline">
+                        <button 
+                          onClick={() => startEditing(entry)} 
+                          className="btn btn-primary btn-sm"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button 
+                          onClick={() => deleteEntry(entry.id)} 
+                          className="btn btn-danger btn-sm"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div className="entry-metadata">
                       <span className="entry-date">{formatDate(entry.created_at)}</span>
                     </div>
-                    <div className="entry-meta">
-                      <span className="block-count">
-                        {entry.content_blocks_count || 0} blocks
-                      </span>
+                    
+                    {/* Display content blocks */}
+                    <div className="content-blocks">
+                      {entry.content_blocks && entry.content_blocks.length > 0 ? (
+                        entry.content_blocks.map((block, index) => (
+                          <div key={index} className={`content-block block-${block.block_type}`}>
+                            {block.block_type === 'text' && (
+                              <p className="block-text">{block.text_content}</p>
+                            )}
+                            {block.block_type === 'image' && (
+                              <div className="block-media">
+                                {block.media_url && (
+                                  <img src={block.media_url} alt={block.caption || 'Image'} />
+                                )}
+                                {block.caption && <p className="block-caption">{block.caption}</p>}
+                              </div>
+                            )}
+                            {block.block_type === 'video' && (
+                              <div className="block-media">
+                                {block.media_url && (
+                                  <video controls>
+                                    <source src={block.media_url} />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                )}
+                                {block.caption && <p className="block-caption">{block.caption}</p>}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="no-content">No content</p>
+                      )}
                     </div>
                   </div>
                 ))
@@ -488,11 +590,11 @@ const Diary = () => {
               ← Cancel
             </button>
 
-            <h2>{view === 'create' ? 'Create New Entry' : 'Edit Entry'}</h2>
+            <h2>{view === 'create' ? 'Create New Memory' : 'Edit Memory'}</h2>
 
             <form onSubmit={view === 'create' ? createEntry : updateEntry}>
               <div className="form-group">
-                <label htmlFor="title">Entry Title</label>
+                <label htmlFor="title">Memory Title</label>
                 <input
                   id="title"
                   type="text"
@@ -610,7 +712,7 @@ const Diary = () => {
 
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary btn-lg">
-                  {view === 'create' ? '📝 Create Entry' : '💾 Save Changes'}
+                  {view === 'create' ? '📝 Save Memory' : '💾 Update Memory'}
                 </button>
                 <button 
                   type="button" 

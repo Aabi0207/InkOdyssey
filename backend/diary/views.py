@@ -22,7 +22,7 @@ class DiaryEntryListCreateView(generics.ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return DiaryEntryCreateSerializer
-        return DiaryEntryListSerializer
+        return DiaryEntrySerializer  # Changed to include content_blocks
     
     def get_queryset(self):
         """Return diary entries for the authenticated user only"""

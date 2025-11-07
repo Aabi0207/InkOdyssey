@@ -1,59 +1,108 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import './Navigation.css';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import "./Navigation.css";
 
 const Navigation = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const sidebarRef = useRef(null);
 
-  const isActive = (path) => {
-    return location.pathname === path ? 'nav-link active' : 'nav-link';
-  };
+  const isActive = (path) =>
+    location.pathname === path ? "nav-link active" : "nav-link";
+
+  const toggleMenu = () => setMenuOpen(!menuOpen);
+
+  // Handle scroll for transparency effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close when clicking outside sidebar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
+    else document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   return (
-    <nav className="main-navigation">
+    <nav className={`main-navigation ${scrolled ? "scrolled" : ""}`}>
       <div className="nav-container">
         <div className="nav-brand">
-          <Link to="/diary">
-            <span className="brand-icon">📖</span>
-            <span className="brand-name">InkOdyssey</span>
+          <Link to="/diary" className="brand-link">
+            <img src="/logo.png" alt="InkOdyssey logo" className="brand-logo" />
           </Link>
-        </div>
-        
-        <div className="nav-menu">
-          <Link to="/diary" className={isActive('/diary')}>
-            <span className="nav-icon">📝</span>
-            Diary
-          </Link>
-          
-          {/* Add more navigation items here as you build more features */}
-          {/* <Link to="/calendar" className={isActive('/calendar')}>
-            <span className="nav-icon">📅</span>
-            Calendar
-          </Link>
-          
-          <Link to="/search" className={isActive('/search')}>
-            <span className="nav-icon">🔍</span>
-            Search
-          </Link>
-          
-          <Link to="/settings" className={isActive('/settings')}>
-            <span className="nav-icon">⚙️</span>
-            Settings
-          </Link> */}
         </div>
 
-        <div className="nav-user">
+        {/* Desktop menu */}
+        <div className="nav-menu-desktop">
+          <Link to="/diary" className={isActive("/diary")}>
+            Diary
+          </Link>
+          <Link to="/calendar" className={isActive("/calendar")}>
+            Calendar
+          </Link>
           {user && (
-            <>
-              <span className="user-name">
-                {user.first_name} {user.last_name}
-              </span>
-              <button onClick={logout} className="logout-btn">
-                Logout
-              </button>
-            </>
+            <button onClick={logout} className="logout-btn capsule">
+              Logout
+            </button>
+          )}
+        </div>
+
+        {/* Three-dot menu for mobile */}
+        <button
+          className={`menu-toggle ${menuOpen ? "open" : ""}`}
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          <span className="dot"></span>
+          <span className="dot"></span>
+          <span className="dot"></span>
+        </button>
+
+        {/* Sidebar for mobile */}
+        <div
+          ref={sidebarRef}
+          className={`nav-sidebar ${menuOpen ? "open" : ""}`}
+        >
+          <Link to="/diary" className={isActive("/diary")} onClick={toggleMenu}>
+            Diary
+          </Link>
+          <Link
+            to="/calendar"
+            className={isActive("/calendar")}
+            onClick={toggleMenu}
+          >
+            Calendar
+          </Link>
+
+          {user && (
+            <button
+              onClick={() => {
+                logout();
+                toggleMenu();
+              }}
+              className="logout-btn capsule"
+            >
+              Logout
+            </button>
           )}
         </div>
       </div>
