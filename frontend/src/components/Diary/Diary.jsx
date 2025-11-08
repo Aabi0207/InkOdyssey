@@ -22,6 +22,18 @@ import './Diary.css';
 import Navigation from '../Navigation/Navigation';
 
 const API_BASE_URL = 'http://localhost:8000/api/diary';
+const BACKEND_URL = 'http://localhost:8000';
+
+// Helper function to get full media URL
+const getMediaUrl = (url) => {
+  if (!url) return null;
+  // If it's already a full URL (starts with http or data:), return as is
+  if (url.startsWith('http') || url.startsWith('data:')) {
+    return url;
+  }
+  // If it's a relative path, prepend the backend URL
+  return `${BACKEND_URL}${url.startsWith('/') ? url : `/${url}`}`;
+};
 
 const Diary = () => {
   const { accessToken, logout } = useAuth();
@@ -329,6 +341,7 @@ const Diary = () => {
       order: formData.content_blocks.length,
       text_content: type === 'text' ? '' : null,
       media_url: type !== 'text' ? '' : null,
+      file_data: type !== 'text' ? '' : null,
       caption: ''
     };
     setFormData({
@@ -345,6 +358,24 @@ const Diary = () => {
       ...formData,
       content_blocks: updatedBlocks
     });
+  };
+
+  // Handle file upload for image/video
+  const handleFileUpload = (index, file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Store the base64 data in file_data field for backend processing
+      const updatedBlocks = [...formData.content_blocks];
+      updatedBlocks[index]['file_data'] = reader.result;
+      updatedBlocks[index]['media_url'] = reader.result; // Keep for preview
+      setFormData({
+        ...formData,
+        content_blocks: updatedBlocks
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   // Remove content block
@@ -399,6 +430,7 @@ const Diary = () => {
         order: block.order,
         text_content: block.text_content || '',
         media_url: block.media_url || '',
+        file_data: '', // New files will be added here
         caption: block.caption || ''
       }))
     });
@@ -612,7 +644,16 @@ const Diary = () => {
                             {block.block_type === 'image' && (
                               <div className="block-media">
                                 {block.media_url && (
-                                  <img src={block.media_url} alt={block.caption || 'Image'} />
+                                  <img 
+                                    src={getMediaUrl(block.media_url)} 
+                                    alt={block.caption || 'Image'} 
+                                    onError={(e) => {
+                                      console.error('Image failed to load:', block.media_url);
+                                      console.error('Full URL:', getMediaUrl(block.media_url));
+                                      e.target.style.display = 'none';
+                                    }}
+                                    onLoad={() => console.log('Image loaded successfully:', getMediaUrl(block.media_url))}
+                                  />
                                 )}
                                 {block.caption && <p className="block-caption">{block.caption}</p>}
                               </div>
@@ -621,7 +662,7 @@ const Diary = () => {
                               <div className="block-media">
                                 {block.media_url && (
                                   <video controls>
-                                    <source src={block.media_url} />
+                                    <source src={getMediaUrl(block.media_url)} />
                                     Your browser does not support the video tag.
                                   </video>
                                 )}
@@ -689,7 +730,7 @@ const Diary = () => {
                     {block.block_type === 'image' && (
                       <div className="block-media">
                         {block.media_url && (
-                          <img src={block.media_url} alt={block.caption || 'Image'} />
+                          <img src={getMediaUrl(block.media_url)} alt={block.caption || 'Image'} />
                         )}
                         {block.caption && <p className="block-caption">{block.caption}</p>}
                       </div>
@@ -698,7 +739,7 @@ const Diary = () => {
                       <div className="block-media">
                         {block.media_url && (
                           <video controls>
-                            <source src={block.media_url} />
+                            <source src={getMediaUrl(block.media_url)} />
                             Your browser does not support the video tag.
                           </video>
                         )}
@@ -828,14 +869,33 @@ const Diary = () => {
 
                         {(block.block_type === 'image' || block.block_type === 'video') && (
                           <>
-                            <input
-                              type="url"
-                              value={block.media_url}
-                              onChange={(e) => updateContentBlock(index, 'media_url', e.target.value)}
-                              placeholder={`Enter ${block.block_type} URL...`}
-                              className="form-control"
-                              required
-                            />
+                            <div className="file-upload-container">
+                              <input
+                                type="file"
+                                accept={block.block_type === 'image' ? 'image/*' : 'video/*'}
+                                onChange={(e) => handleFileUpload(index, e.target.files[0])}
+                                className="file-input"
+                                id={`file-${index}`}
+                              />
+                              <label htmlFor={`file-${index}`} className="file-label">
+                                {block.media_url ? 'Change File' : `Choose ${block.block_type}`}
+                              </label>
+                              {block.media_url && (
+                                <span className="file-name">File uploaded ✓</span>
+                              )}
+                            </div>
+                            
+                            {/* Preview */}
+                            {block.media_url && (
+                              <div className="media-preview">
+                                {block.block_type === 'image' ? (
+                                  <img src={block.media_url} alt="Preview" className="preview-image" />
+                                ) : (
+                                  <video src={block.media_url} controls className="preview-video" />
+                                )}
+                              </div>
+                            )}
+                            
                             <input
                               type="text"
                               value={block.caption}

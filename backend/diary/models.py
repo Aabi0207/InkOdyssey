@@ -59,7 +59,7 @@ class ContentBlock(models.Model):
         blank=True,
         null=True
     )
-    media_url = models.URLField(blank=True, null=True)  # For external URLs
+    media_url = models.TextField(blank=True, null=True)  # For external URLs or base64 data
     caption = models.CharField(max_length=500, blank=True)
     
     created_at = models.DateTimeField(default=timezone.now)
@@ -83,3 +83,9 @@ class ContentBlock(models.Model):
             raise ValidationError('Text blocks must have text content.')
         elif self.block_type in ['image', 'video'] and not (self.media_file or self.media_url):
             raise ValidationError(f'{self.block_type.capitalize()} blocks must have a media file or URL.')
+    
+    def delete(self, *args, **kwargs):
+        """Delete the media file when deleting the content block"""
+        if self.media_file:
+            self.media_file.delete(save=False)
+        super().delete(*args, **kwargs)
