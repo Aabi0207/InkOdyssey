@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   PenLine, 
   Edit, 
@@ -23,16 +23,15 @@ const API_BASE_URL = 'http://localhost:8000/api/diary';
 
 const Diary = () => {
   const { accessToken, logout } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { date } = useParams();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState({ text: 'Loading inspiration...', author: '' });
-  const [selectedDate, setSelectedDate] = useState(
-    searchParams.get('date') || new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(date || new Date().toISOString().split('T')[0]);
   const [view, setView] = useState('list'); // 'list', 'detail', 'create', 'edit'
   
   // Form state
@@ -240,10 +239,8 @@ const Diary = () => {
   };
 
   // Handle date change
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    setSearchParams({ date });
-    fetchEntriesByDate(date);
+  const handleDateChange = (newDate) => {
+    navigate(`/diary/${newDate}`);
   };
 
   // Format date for display
@@ -360,16 +357,19 @@ const Diary = () => {
       return;
     }
     
-    const dateParam = searchParams.get('date');
-    if (dateParam) {
-      setSelectedDate(dateParam);
-      fetchEntriesByDate(dateParam);
+    if (date) {
+      setSelectedDate(date);
+      fetchEntriesByDate(date);
     } else {
-      fetchEntries();
+      // If no date in URL, redirect to today's date
+      const today = new Date().toISOString().split('T')[0];
+      navigate(`/diary/${today}`, { replace: true });
+      return;
     }
+    
     fetchQuote();
     fetchStats();
-  }, [accessToken]);
+  }, [accessToken, date]);
 
   if (loading && entries.length === 0) {
     return (

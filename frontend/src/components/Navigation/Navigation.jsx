@@ -10,8 +10,12 @@ const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);
   const sidebarRef = useRef(null);
 
-  const isActive = (path) =>
-    location.pathname === path ? "nav-link active" : "nav-link";
+  const isActive = (path) => {
+    if (path === "/diary") {
+      return location.pathname.startsWith("/diary") ? "nav-link active" : "nav-link";
+    }
+    return location.pathname === path ? "nav-link active" : "nav-link";
+  };
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
