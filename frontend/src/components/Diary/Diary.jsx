@@ -10,7 +10,9 @@ import {
   Image, 
   Video, 
   ChevronUp, 
-  ChevronDown, 
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X, 
   Save, 
   Calendar,
@@ -33,6 +35,8 @@ const Diary = () => {
   const [quote, setQuote] = useState({ text: 'Loading inspiration...', author: '' });
   const [selectedDate, setSelectedDate] = useState(date || new Date().toISOString().split('T')[0]);
   const [view, setView] = useState('list'); // 'list', 'detail', 'create', 'edit'
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date());
   
   // Form state
   const [formData, setFormData] = useState({
@@ -241,6 +245,65 @@ const Diary = () => {
   // Handle date change
   const handleDateChange = (newDate) => {
     navigate(`/diary/${newDate}`);
+    setShowDatePicker(false);
+  };
+
+  // Toggle date picker
+  const toggleDatePicker = () => {
+    setShowDatePicker(!showDatePicker);
+    if (!showDatePicker) {
+      // Set picker to current selected date's month
+      const currentDate = new Date(selectedDate);
+      setPickerMonth(new Date(currentDate.getFullYear(), currentDate.getMonth(), 1));
+    }
+  };
+
+  // Calendar picker functions
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const previousMonth = () => {
+    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 1));
+  };
+
+  const isSelectedDate = (day) => {
+    const year = pickerMonth.getFullYear();
+    const month = pickerMonth.getMonth();
+    const date = new Date(year, month, day);
+    const dateString = date.toISOString().split('T')[0];
+    return dateString === selectedDate;
+  };
+
+  const isToday = (day) => {
+    const today = new Date();
+    const year = pickerMonth.getFullYear();
+    const month = pickerMonth.getMonth();
+    
+    return (
+      today.getDate() === day &&
+      today.getMonth() === month &&
+      today.getFullYear() === year
+    );
+  };
+
+  const handleDayClick = (day) => {
+    const year = pickerMonth.getFullYear();
+    const month = pickerMonth.getMonth();
+    const date = new Date(year, month, day);
+    const dateString = date.toISOString().split('T')[0];
+    handleDateChange(dateString);
   };
 
   // Format date for display
@@ -404,23 +467,68 @@ const Diary = () => {
 
           {/* Right: Date with Calendar */}
           <div className="diary-date-section">
-            <div className="date-display">
+            <div className="date-display" onClick={toggleDatePicker}>
               <span className="current-date">{formatDisplayDate(selectedDate)}</span>
-              <input
-                id="date-picker"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="date-picker-input"
-                title="Choose date"
-              />
-              <label htmlFor="date-picker" className="calendar-icon" title="Choose date">
-                <Calendar size={20} />
-              </label>
+              <div className="calendar-icon-label" title="Choose date">
+                <Calendar size={20} className="calendar-icon" />
+              </div>
             </div>
+
+            {/* Custom Date Picker */}
+            {showDatePicker && (
+              <div className="custom-date-picker">
+                <div className="picker-header">
+                  <button onClick={(e) => { e.stopPropagation(); previousMonth(); }} className="picker-nav-btn">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="picker-month">
+                    {pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button onClick={(e) => { e.stopPropagation(); nextMonth(); }} className="picker-nav-btn">
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="picker-grid">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="picker-weekday">{day}</div>
+                  ))}
+                  
+                  {(() => {
+                    const { daysInMonth, startingDayOfWeek } = getDaysInMonth(pickerMonth);
+                    const days = [];
+                    
+                    // Empty cells before month starts
+                    for (let i = 0; i < startingDayOfWeek; i++) {
+                      days.push(<div key={`empty-${i}`} className="picker-day empty"></div>);
+                    }
+                    
+                    // Days of the month
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      days.push(
+                        <div
+                          key={day}
+                          className={`picker-day ${isToday(day) ? 'today' : ''} ${isSelectedDate(day) ? 'selected' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); handleDayClick(day); }}
+                        >
+                          {day}
+                        </div>
+                      );
+                    }
+                    
+                    return days;
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
+
+      {/* Overlay to close date picker */}
+      {showDatePicker && (
+        <div className="date-picker-overlay" onClick={() => setShowDatePicker(false)}></div>
+      )}
 
       {/* Main Content */}
       <div className="diary-main">
@@ -433,7 +541,7 @@ const Diary = () => {
                   resetForm();
                   setView('create');
                 }} 
-                className="btn btn-primary"
+                className="btn btn-primary btn-new-memory"
               >
                 <PenLine size={18} style={{ marginRight: '8px' }} />
                 New Memory

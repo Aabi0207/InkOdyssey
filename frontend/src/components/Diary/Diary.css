@@ -78,6 +78,7 @@
   justify-content: flex-end;
   align-items: flex-start;
   padding-top: 0.5rem;
+  position: relative;
 }
 
 .date-display {
@@ -89,6 +90,7 @@
   border-radius: 50px;
   border: 1px solid rgba(41, 128, 185, 0.2);
   transition: all 0.3s ease;
+  position: relative;
   cursor: pointer;
 }
 
@@ -104,24 +106,156 @@
   white-space: nowrap;
 }
 
+.calendar-icon-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #2980B9;
+}
+
+.date-display:hover .calendar-icon-label {
+  transform: scale(1.15);
+  color: #1a5f8f;
+}
+
 .calendar-icon {
-  font-size: 1.25rem;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  display: block;
 }
 
-.calendar-icon:hover {
-  transform: scale(1.1);
-}
-
-.date-picker-input {
+/* Custom Date Picker */
+.custom-date-picker {
   position: absolute;
-  opacity: 0;
-  pointer-events: all;
+  top: 100%;
+  right: 0;
+  margin-top: 0.75rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(41, 128, 185, 0.2);
+  padding: 1.25rem;
+  z-index: 1000;
+  min-width: 320px;
+  animation: fadeInDown 0.2s ease;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.date-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: transparent;
+}
+
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #ECF0F1;
+}
+
+.picker-month {
+  font-weight: 700;
+  color: #2C3E50;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.picker-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(41, 128, 185, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2980B9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
-  right: 10px;
+  transition: all 0.2s ease;
+}
+
+.picker-nav-btn:hover {
+  background: #2980B9;
+  color: white;
+  border-color: #2980B9;
+  transform: scale(1.05);
+}
+
+.picker-nav-btn svg {
+  display: block;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.picker-weekday {
+  text-align: center;
+  font-weight: 600;
+  color: #7F8C8D;
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+  text-transform: uppercase;
+  font-family: 'Poppins', sans-serif;
+}
+
+.picker-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2C3E50;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #F8F9FA;
+  font-family: 'Poppins', sans-serif;
+}
+
+.picker-day.empty {
+  background: transparent;
+  cursor: default;
+}
+
+.picker-day:not(.empty):hover {
+  background: rgba(41, 128, 185, 0.1);
+  transform: scale(1.05);
+}
+
+.picker-day.today {
+  background: rgba(41, 128, 185, 0.15);
+  font-weight: 700;
+  color: #2980B9;
+}
+
+.picker-day.selected {
+  background: linear-gradient(135deg, #2980B9, #3498DB);
+  color: white;
+  font-weight: 700;
+}
+
+.picker-day.selected:hover {
+  background: linear-gradient(135deg, #1a5f8f, #2980B9);
 }
 
 /* Main Content */
@@ -134,8 +268,13 @@
 /* Actions Bar */
 .diary-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   margin-bottom: 2.5rem;
+}
+
+.btn-new-memory {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Entries List */
