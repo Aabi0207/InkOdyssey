@@ -5,6 +5,7 @@
   min-height: 100vh;
   background: #ECF0F1;
   padding-bottom: 3rem;
+  overflow-x: hidden;
 }
 
 /* Diary Page Header - Logo, Quote, Date */
