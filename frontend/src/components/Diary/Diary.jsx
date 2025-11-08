@@ -278,11 +278,18 @@ const Diary = () => {
     setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 1));
   };
 
+  // Helper to format date to YYYY-MM-DD without timezone issues
+  const formatDateString = (year, month, day) => {
+    const y = year.toString();
+    const m = (month + 1).toString().padStart(2, '0');
+    const d = day.toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const isSelectedDate = (day) => {
     const year = pickerMonth.getFullYear();
     const month = pickerMonth.getMonth();
-    const date = new Date(year, month, day);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = formatDateString(year, month, day);
     return dateString === selectedDate;
   };
 
@@ -301,8 +308,7 @@ const Diary = () => {
   const handleDayClick = (day) => {
     const year = pickerMonth.getFullYear();
     const month = pickerMonth.getMonth();
-    const date = new Date(year, month, day);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = formatDateString(year, month, day);
     handleDateChange(dateString);
   };
 
