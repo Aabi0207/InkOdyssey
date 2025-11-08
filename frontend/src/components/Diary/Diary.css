@@ -468,6 +468,14 @@ textarea.form-control {
   cursor: pointer;
   transition: all 0.2s;
   color: #2C3E50;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-icon svg {
+  display: block;
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -475,6 +483,10 @@ textarea.form-control {
   color: white;
   border-color: #2980B9;
   transform: translateY(-1px);
+}
+
+.btn-icon:hover:not(:disabled) svg {
+  color: white;
 }
 
 .btn-icon:disabled {
@@ -488,10 +500,18 @@ textarea.form-control {
   border-color: rgba(231, 76, 60, 0.3);
 }
 
+.btn-icon.btn-remove svg {
+  color: #E74C3C;
+}
+
 .btn-icon.btn-remove:hover {
   background: #E74C3C;
   color: white;
   border-color: #E74C3C;
+}
+
+.btn-icon.btn-remove:hover svg {
+  color: white;
 }
 
 /* Form Actions */

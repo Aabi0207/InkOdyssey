@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
+import { 
+  PenLine, 
+  Edit, 
+  Trash2, 
+  ArrowLeft, 
+  FileText, 
+  Image, 
+  Video, 
+  ChevronUp, 
+  ChevronDown, 
+  X, 
+  Save, 
+  Calendar,
+  BookOpen
+} from 'lucide-react';
 import './Diary.css';
 import Navigation from '../Navigation/Navigation';
 
@@ -400,7 +415,7 @@ const Diary = () => {
                 title="Choose date"
               />
               <label htmlFor="date-picker" className="calendar-icon" title="Choose date">
-                📅
+                <Calendar size={20} />
               </label>
             </div>
           </div>
@@ -420,14 +435,17 @@ const Diary = () => {
                 }} 
                 className="btn btn-primary"
               >
-                ✏️ New Memory
+                <PenLine size={18} style={{ marginRight: '8px' }} />
+                New Memory
               </button>
             </div>
 
             <div className="entries-list">
               {entries.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">📝</div>
+                  <div className="empty-icon">
+                    <BookOpen size={48} />
+                  </div>
                   <h3>No memories for this day</h3>
                   <p>Start capturing your thoughts and moments!</p>
                   <button 
@@ -453,13 +471,15 @@ const Diary = () => {
                           onClick={() => startEditing(entry)} 
                           className="btn btn-primary btn-sm"
                         >
-                          ✏️ Edit
+                          <Edit size={16} style={{ marginRight: '6px' }} />
+                          Edit
                         </button>
                         <button 
                           onClick={() => deleteEntry(entry.id)} 
                           className="btn btn-danger btn-sm"
                         >
-                          🗑️ Delete
+                          <Trash2 size={16} style={{ marginRight: '6px' }} />
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -514,7 +534,8 @@ const Diary = () => {
               onClick={() => setView('list')} 
               className="btn btn-secondary btn-back"
             >
-              ← Back
+              <ArrowLeft size={18} style={{ marginRight: '6px' }} />
+              Back
             </button>
             
             <div className="entry-detail-header">
@@ -524,13 +545,15 @@ const Diary = () => {
                   onClick={() => startEditing(selectedEntry)} 
                   className="btn btn-primary"
                 >
-                  ✏️ Edit
+                  <Edit size={18} style={{ marginRight: '8px' }} />
+                  Edit
                 </button>
                 <button 
                   onClick={() => deleteEntry(selectedEntry.id)} 
                   className="btn btn-danger"
                 >
-                  🗑️ Delete
+                  <Trash2 size={18} style={{ marginRight: '8px' }} />
+                  Delete
                 </button>
               </div>
             </div>
@@ -587,7 +610,8 @@ const Diary = () => {
               }} 
               className="btn btn-secondary btn-back"
             >
-              ← Cancel
+              <ArrowLeft size={18} style={{ marginRight: '6px' }} />
+              Cancel
             </button>
 
             <h2>{view === 'create' ? 'Create New Memory' : 'Edit Memory'}</h2>
@@ -615,21 +639,24 @@ const Diary = () => {
                       onClick={() => addContentBlock('text')}
                       className="btn btn-sm btn-outline"
                     >
-                      📝 Text
+                      <FileText size={16} style={{ marginRight: '6px' }} />
+                      Text
                     </button>
                     <button 
                       type="button" 
                       onClick={() => addContentBlock('image')}
                       className="btn btn-sm btn-outline"
                     >
-                      🖼️ Image
+                      <Image size={16} style={{ marginRight: '6px' }} />
+                      Image
                     </button>
                     <button 
                       type="button" 
                       onClick={() => addContentBlock('video')}
                       className="btn btn-sm btn-outline"
                     >
-                      🎥 Video
+                      <Video size={16} style={{ marginRight: '6px' }} />
+                      Video
                     </button>
                   </div>
                 </div>
@@ -652,7 +679,7 @@ const Diary = () => {
                               className="btn btn-icon"
                               title="Move up"
                             >
-                              ▲
+                              <ChevronUp size={16} color="currentColor" />
                             </button>
                             <button
                               type="button"
@@ -661,7 +688,7 @@ const Diary = () => {
                               className="btn btn-icon"
                               title="Move down"
                             >
-                              ▼
+                              <ChevronDown size={16} color="currentColor" />
                             </button>
                             <button
                               type="button"
@@ -669,7 +696,7 @@ const Diary = () => {
                               className="btn btn-icon btn-remove"
                               title="Remove block"
                             >
-                              ✕
+                              <X size={16} color="currentColor" />
                             </button>
                           </div>
                         </div>
@@ -712,7 +739,17 @@ const Diary = () => {
 
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary btn-lg">
-                  {view === 'create' ? '📝 Save Memory' : '💾 Update Memory'}
+                  {view === 'create' ? (
+                    <>
+                      <PenLine size={18} style={{ marginRight: '8px' }} />
+                      Save Memory
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} style={{ marginRight: '8px' }} />
+                      Update Memory
+                    </>
+                  )}
                 </button>
                 <button 
                   type="button" 
