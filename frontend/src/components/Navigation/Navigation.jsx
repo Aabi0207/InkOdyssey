@@ -49,7 +49,7 @@ const Navigation = () => {
   return (
     <nav className={`main-navigation ${scrolled ? "scrolled" : ""}`}>
       <div className="nav-container">
-        <div className="nav-brand">
+        <div className={`nav-brand ${location.pathname.startsWith("/diary") ? "hidden" : ""}`}>
           <Link to="/diary" className="brand-link">
             <img src="/logo.png" alt="InkOdyssey logo" className="brand-logo" />
           </Link>
