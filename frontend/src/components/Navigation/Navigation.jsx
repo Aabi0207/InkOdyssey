@@ -63,6 +63,9 @@ const Navigation = () => {
           <Link to="/calendar" className={isActive("/calendar")}>
             Calendar
           </Link>
+          <Link to="/dashboard" className={isActive("/dashboard")}>
+            Dashboard
+          </Link>
           {user && (
             <button onClick={logout} className="logout-btn capsule">
               Logout
@@ -95,6 +98,13 @@ const Navigation = () => {
             onClick={toggleMenu}
           >
             Calendar
+          </Link>
+          <Link
+            to="/dashboard"
+            className={isActive("/dashboard")}
+            onClick={toggleMenu}
+          >
+            Dashboard
           </Link>
 
           {user && (

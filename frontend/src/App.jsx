@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage'
 import DummyPage from './pages/DummyPage'
 import DiaryPage from './pages/DiaryPage'
 import CalendarPage from './pages/CalendarPage'
+import DashboardPage from './pages/DashboardPage'
 import DiaryRedirect from './components/DiaryRedirect'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
@@ -21,6 +22,7 @@ function App() {
 
           {/* Protected routes */}
           <Route path="/dummy" element={<ProtectedRoute><DummyPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/diary/:date" element={<ProtectedRoute><DiaryPage /></ProtectedRoute>} />
           <Route path="/diary" element={<ProtectedRoute><DiaryRedirect /></ProtectedRoute>} />
