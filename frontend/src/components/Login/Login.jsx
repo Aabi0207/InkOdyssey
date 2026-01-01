@@ -67,7 +67,7 @@ const Login = () => {
         setSuccessMessage('Login successful! Redirecting...');
         setFormData({ email: '', password: '' });
         setTimeout(() => {
-          navigate('/dummy');
+          navigate('/diary');
         }, 1000);
       } else {
         setErrors({ general: result.error || 'Login failed. Please check your credentials.' });

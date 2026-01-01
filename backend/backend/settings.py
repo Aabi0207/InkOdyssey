@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "users",
     "habit_tracker",
     "diary",
+    "self_reflection",
 ]
 
 MIDDLEWARE = [

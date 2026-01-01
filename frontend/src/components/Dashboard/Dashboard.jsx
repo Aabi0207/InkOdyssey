@@ -1,578 +1,538 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, TrendingUp, Calendar, Heart, Smile } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
+import { format, subDays, startOfYear, endOfYear, subYears, parseISO } from 'date-fns';
+import { TrendingUp, Calendar as CalendarIcon, BarChart3, ChevronLeft, ChevronRight, BookOpen, Flame, Activity } from 'lucide-react';
+import Navigation from '../Navigation/Navigation';
 import './Dashboard.css';
 
-const API_BASE_URL = 'http://localhost:8000/api/tracker';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/self-reflection';
 
 const Dashboard = () => {
-  const [habits, setHabits] = useState([]);
-  const [todayLogs, setTodayLogs] = useState([]);
-  const [todayReflection, setTodayReflection] = useState(null);
-  const [showAddHabit, setShowAddHabit] = useState(false);
-  const [showReflection, setShowReflection] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // New habit form
-  const [newHabit, setNewHabit] = useState({
-    name: '',
-    description: '',
-    frequency: 'daily',
-    tracking_type: 'boolean',
-    target_value: 1,
-    color: '#2980B9',
-    icon: ''
-  });
-
-  // Reflection form
-  const [reflection, setReflection] = useState({
-    day_rating: 5,
-    mood: 'okay',
-    mood_intensity: 5,
-    notes: '',
-    gratitude: ''
-  });
-
-  const moodOptions = [
-    { value: 'terrible', label: 'Terrible', emoji: '😞' },
-    { value: 'bad', label: 'Bad', emoji: '😕' },
-    { value: 'okay', label: 'Okay', emoji: '😐' },
-    { value: 'good', label: 'Good', emoji: '🙂' },
-    { value: 'excellent', label: 'Excellent', emoji: '😊' },
-    { value: 'peak', label: 'Peak', emoji: '🤩' }
-  ];
+  const [selectedDays, setSelectedDays] = useState(30);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchDashboardData();
+  }, [selectedDays]);
 
-  const fetchData = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      await Promise.all([
-        fetchHabits(),
-        fetchTodayLogs(),
-        fetchTodayReflection()
-      ]);
+      setError(null);
+      const response = await fetch(
+        `${API_BASE_URL}/reflections/dashboard_stats/?days=${selectedDays}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      } else {
+        setError('Failed to load dashboard data');
+      }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchHabits = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/habits/active/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setHabits(data);
-      }
-    } catch (error) {
-      console.error('Error fetching habits:', error);
-    }
-  };
-
-  const fetchTodayLogs = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/logs/today/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTodayLogs(data);
-      }
-    } catch (error) {
-      console.error('Error fetching today logs:', error);
-    }
-  };
-
-  const fetchTodayReflection = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/reflections/today/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTodayReflection(data);
-        setReflection({
-          day_rating: data.day_rating,
-          mood: data.mood,
-          mood_intensity: data.mood_intensity,
-          notes: data.notes,
-          gratitude: data.gratitude
-        });
-      }
-    } catch (error) {
-      // No reflection for today yet
-      setTodayReflection(null);
-    }
-  };
-
-  const handleAddHabit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(`${API_BASE_URL}/habits/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newHabit)
-      });
-      
-      if (response.ok) {
-        setNewHabit({
-          name: '',
-          description: '',
-          frequency: 'daily',
-          tracking_type: 'boolean',
-          target_value: 1,
-          color: '#2980B9',
-          icon: ''
-        });
-        setShowAddHabit(false);
-        fetchHabits();
-      } else {
-        alert('Failed to add habit');
-      }
-    } catch (error) {
-      console.error('Error adding habit:', error);
-      alert('Failed to add habit');
-    }
-  };
-
-  const handleDeleteHabit = async (habitId) => {
-    if (!confirm('Are you sure you want to delete this habit?')) return;
+  // Format X-axis ticks based on date range
+  const formatXAxis = (date) => {
+    if (!date) return '';
+    const parsedDate = typeof date === 'string' ? parseISO(date) : date;
     
-    try {
-      const response = await fetch(`${API_BASE_URL}/habits/${habitId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
+    if (selectedDays === 7) {
+      // For 7 days, show day and date (Mon 1)
+      return format(parsedDate, 'EEE d');
+    } else if (selectedDays === 30) {
+      // For 30 days, show date (Dec 1)
+      return format(parsedDate, 'MMM d');
+    } else if (selectedDays === 90) {
+      // For 90 days, show month (Dec)
+      return format(parsedDate, 'MMM');
+    } else {
+      // For 1 year, show only month (Dec)
+      return format(parsedDate, 'MMM');
+    }
+  };
+
+  // Calculate tick interval based on days
+  const getTickInterval = () => {
+    if (selectedDays === 7) {
+      return 0; // Show all days
+    } else if (selectedDays === 30) {
+      return 4; // Show every 5th day
+    } else if (selectedDays === 90) {
+      return 14; // Show every ~15 days
+    } else {
+      return 29; // Show every ~30 days for 1 year (monthly)
+    }
+  };
+
+  // Custom tooltip for line charts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const value = payload[0].value;
+      if (value === null) return null;
+      
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-date">{format(new Date(label), 'MMM dd, yyyy')}</p>
+          <p className="tooltip-value">{value}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Custom tooltip for heatmap
+  const HeatmapTooltip = ({ date, value, color }) => {
+    if (!date || value === null) return null;
+    
+    return (
+      <div className="custom-tooltip heatmap-tooltip">
+        <p className="tooltip-date">{format(new Date(date), 'MMM dd, yyyy')}</p>
+        <p className="tooltip-value">{value}</p>
+      </div>
+    );
+  };
+
+  // Render range question chart (smooth line with area fill)
+  const renderRangeChart = (question) => {
+    const chartData = question.line_chart.data.map(item => ({
+      date: item.date,
+      value: item.value,
+      color: item.color
+    }));
+
+    const stats = question.line_chart.statistics;
+
+    return (
+      <div key={question.question_id} className="chart-card">
+        <div className="chart-header">
+          <div className="chart-title-section">
+            <TrendingUp className="chart-icon" size={20} />
+            <div>
+              <h3 className="chart-title">{question.question_text}</h3>
+              <p className="chart-category">{question.category || 'General'}</p>
+            </div>
+          </div>
+          {stats && stats.count > 0 && (
+            <div className="chart-stats">
+              <div className="stat-item">
+                <span className="stat-label">Avg</span>
+                <span className="stat-value">{stats.average}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Min</span>
+                <span className="stat-value">{stats.min}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Max</span>
+                <span className="stat-value">{stats.max}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Count</span>
+                <span className="stat-value">{stats.count}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart 
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id={`gradient-${question.question_id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2980B9" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#2980B9" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={formatXAxis}
+                stroke="#95a5a6"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                interval={getTickInterval()}
+                minTickGap={20}
+              />
+              <YAxis 
+                stroke="#95a5a6"
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#2980B9" 
+                strokeWidth={3}
+                fill={`url(#gradient-${question.question_id})`}
+                dot={{ 
+                  fill: '#2980B9', 
+                  strokeWidth: 0, 
+                  r: 4 
+                }}
+                activeDot={{ 
+                  r: 6, 
+                  fill: '#2980B9',
+                  stroke: '#fff',
+                  strokeWidth: 2
+                }}
+                connectNulls={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Distribution */}
+        {question.distribution && Object.keys(question.distribution).length > 0 && (
+          <div className="distribution-section">
+            <h4 className="distribution-title">Value Distribution</h4>
+            <div className="distribution-grid">
+              {Object.entries(question.distribution)
+                .filter(([_, data]) => data.count > 0)
+                .sort(([_, a], [__, b]) => b.count - a.count)
+                .map(([value, data]) => (
+                  <div key={value} className="distribution-item">
+                    <div 
+                      className="distribution-color" 
+                      style={{ backgroundColor: data.color }}
+                    />
+                    <span className="distribution-label">{value}</span>
+                    <span className="distribution-count">{data.count}x</span>
+                    <span className="distribution-percentage">{data.percentage}%</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render choice question chart (calendar heatmap)
+  const renderChoiceChart = (question) => {
+    // Use selected year for heatmap
+    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
+    const yearEnd = endOfYear(new Date(selectedYear, 11, 31));
+    
+    // Create a map of responses by date
+    const responseMap = {};
+    question.line_chart.datasets.forEach(dataset => {
+      dataset.data.forEach(item => {
+        if (item.selected) {
+          responseMap[item.date] = {
+            date: item.date,
+            choice: dataset.label,
+            color: dataset.color
+          };
         }
       });
+    });
+
+    // Convert to heatmap format
+    const heatmapData = Object.values(responseMap).map(item => ({
+      date: item.date,
+      count: 1,
+      choice: item.choice,
+      color: item.color
+    }));
+
+    return (
+      <div key={question.question_id} className="chart-card">
+        <div className="chart-header">
+          <div className="chart-title-section">
+            <CalendarIcon className="chart-icon" size={20} />
+            <div>
+              <h3 className="chart-title">{question.question_text}</h3>
+              <p className="chart-category">{question.category || 'General'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Color Legend */}
+        <div className="choice-legend">
+          {question.line_chart.datasets.map(dataset => (
+            <div key={dataset.label} className="legend-item">
+              <div 
+                className="legend-color" 
+                style={{ backgroundColor: dataset.color }}
+              />
+              <span className="legend-label">{dataset.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Year Selector */}
+        <div className="year-selector">
+          <button 
+            className="year-nav-button"
+            onClick={() => setSelectedYear(selectedYear - 1)}
+            aria-label="Previous year"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="year-display">{selectedYear}</span>
+          <button 
+            className="year-nav-button"
+            onClick={() => setSelectedYear(selectedYear + 1)}
+            disabled={selectedYear >= new Date().getFullYear()}
+            aria-label="Next year"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Calendar Heatmap */}
+        <div className="heatmap-container">
+          <CalendarHeatmap
+            startDate={yearStart}
+            endDate={yearEnd}
+            values={heatmapData}
+            gutterSize={3}
+            classForValue={(value) => {
+              if (!value || !value.count) {
+                return 'color-empty';
+              }
+              return 'color-filled';
+            }}
+            tooltipDataAttrs={(value) => {
+              if (!value || !value.date) {
+                return {};
+              }
+              return {
+                'data-tip': `${format(new Date(value.date), 'MMM dd, yyyy')}: ${value.choice || 'No response'}`
+              };
+            }}
+            transformDayElement={(element, value) => {
+              if (value && value.color) {
+                return React.cloneElement(element, {
+                  style: {
+                    ...element.props.style,
+                    fill: value.color,
+                    opacity: 1
+                  }
+                });
+              }
+              return element;
+            }}
+          />
+        </div>
+
+        {/* Distribution */}
+        {question.distribution && (
+          <div className="distribution-section">
+            <h4 className="distribution-title">Choice Distribution</h4>
+            <div className="distribution-grid">
+              {Object.entries(question.distribution)
+                .filter(([_, data]) => data.count > 0)
+                .sort(([_, a], [__, b]) => b.count - a.count)
+                .map(([choice, data]) => (
+                  <div key={choice} className="distribution-item">
+                    <div 
+                      className="distribution-color" 
+                      style={{ backgroundColor: data.color }}
+                    />
+                    <span className="distribution-label">{choice}</span>
+                    <span className="distribution-count">{data.count}x</span>
+                    <span className="distribution-percentage">{data.percentage}%</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Group questions by category and type
+  const groupQuestions = (questions) => {
+    const grouped = {};
+    
+    questions.forEach(question => {
+      const category = question.category || 'General';
+      const questionType = question.question_type;
       
-      if (response.ok) {
-        fetchHabits();
-        fetchTodayLogs();
-      } else {
-        alert('Failed to delete habit');
+      if (!grouped[category]) {
+        grouped[category] = { range: [], choice: [], text: [] };
       }
-    } catch (error) {
-      console.error('Error deleting habit:', error);
-      alert('Failed to delete habit');
-    }
-  };
-
-  const handleLogHabit = async (habitId, value = 1) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/logs/log_habit/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          habit_id: habitId,
-          value: value
-        })
-      });
       
-      if (response.ok) {
-        fetchTodayLogs();
-      } else {
-        alert('Failed to log habit');
+      // Only add if the question type is valid
+      if (questionType === 'range' || questionType === 'choice') {
+        grouped[category][questionType].push(question);
       }
-    } catch (error) {
-      console.error('Error logging habit:', error);
-      alert('Failed to log habit');
-    }
-  };
+    });
 
-  const handleSaveReflection = async (e) => {
-    e.preventDefault();
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const payload = todayReflection 
-        ? reflection 
-        : { ...reflection, date: today };
-      
-      const url = todayReflection 
-        ? `${API_BASE_URL}/reflections/${todayReflection.id}/`
-        : `${API_BASE_URL}/reflections/`;
-      
-      const method = todayReflection ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (response.ok) {
-        setShowReflection(false);
-        fetchTodayReflection();
-      } else {
-        alert('Failed to save reflection');
-      }
-    } catch (error) {
-      console.error('Error saving reflection:', error);
-      alert('Failed to save reflection');
-    }
-  };
-
-  const getHabitLog = (habitId) => {
-    return todayLogs.find(log => log.habit === habitId);
-  };
-
-  const getCompletionPercentage = (habit) => {
-    const log = getHabitLog(habit.id);
-    if (!log) return 0;
-    if (habit.tracking_type === 'boolean') {
-      return log.completed ? 100 : 0;
-    }
-    return Math.min((log.value / habit.target_value) * 100, 100);
+    return grouped;
   };
 
   if (loading) {
-    return <div className="dashboard-loading">Loading dashboard...</div>;
+    return (
+      <>
+        <Navigation />
+        <div className="dashboard">
+          <div className="dashboard-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading your insights...</p>
+          </div>
+        </div>
+      </>
+    );
   }
 
+  if (error) {
+    return (
+      <>
+        <Navigation />
+        <div className="dashboard">
+          <div className="dashboard-error">
+            <p>{error}</p>
+            <button onClick={fetchDashboardData} className="retry-button">
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!dashboardData || !dashboardData.questions || dashboardData.questions.length === 0) {
+    return (
+      <>
+        <Navigation />
+        <div className="dashboard">
+          <div className="dashboard-empty">
+            <BarChart3 size={64} strokeWidth={1.5} />
+            <h2>No Reflection Data Yet</h2>
+            <p>Start adding your daily reflections to see beautiful insights and trends!</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const groupedQuestions = groupQuestions(dashboardData.questions);
+
   return (
-    <div className="dashboard">
-      <div className="dashboard-container">
-        <header className="dashboard-header">
-          <h1>Dashboard</h1>
-          <p className="dashboard-date">{new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
-        </header>
-
-        {/* Daily Reflection Section */}
-        <section className="reflection-section">
-          <div className="section-header">
-            <h2><Heart size={20} /> Daily Reflection</h2>
+    <>
+      <Navigation />
+      <div className="dashboard">
+        <div className="dashboard-container">
+        {/* Header */}
+        <div className="dashboard-header">
+          <div>
+            <h1>Reflection Insights</h1>
+            <p className="dashboard-subtitle">
+              Visualizing {dashboardData.overview.total_reflections} reflections 
+              from the last {dashboardData.overview.days_analyzed} days
+            </p>
+          </div>
+          
+          {/* Day selector */}
+          <div className="day-selector">
             <button 
-              className="btn-primary"
-              onClick={() => setShowReflection(!showReflection)}
+              className={`day-button ${selectedDays === 7 ? 'active' : ''}`}
+              onClick={() => setSelectedDays(7)}
             >
-              {todayReflection ? 'Edit Reflection' : 'Add Reflection'}
+              7 Days
+            </button>
+            <button 
+              className={`day-button ${selectedDays === 30 ? 'active' : ''}`}
+              onClick={() => setSelectedDays(30)}
+            >
+              30 Days
+            </button>
+            <button 
+              className={`day-button ${selectedDays === 90 ? 'active' : ''}`}
+              onClick={() => setSelectedDays(90)}
+            >
+              90 Days
+            </button>
+            <button 
+              className={`day-button ${selectedDays === 365 ? 'active' : ''}`}
+              onClick={() => setSelectedDays(365)}
+            >
+              1 Year
             </button>
           </div>
+        </div>
 
-          {todayReflection && !showReflection && (
-            <div className="reflection-summary">
-              <div className="reflection-item">
-                <span className="reflection-label">Day Rating:</span>
-                <span className="reflection-value">{todayReflection.day_rating}/10</span>
-              </div>
-              <div className="reflection-item">
-                <span className="reflection-label">Mood:</span>
-                <span className="reflection-value">
-                  {moodOptions.find(m => m.value === todayReflection.mood)?.emoji} {todayReflection.mood}
-                  <span className="mood-intensity"> (Intensity: {todayReflection.mood_intensity}/10)</span>
-                </span>
-              </div>
-              {todayReflection.gratitude && (
-                <div className="reflection-item">
-                  <span className="reflection-label">Grateful for:</span>
-                  <span className="reflection-value">{todayReflection.gratitude}</span>
-                </div>
-              )}
+        {/* Overview Stats */}
+        <div className="overview-stats">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <BookOpen size={24} strokeWidth={2} />
             </div>
-          )}
-
-          {showReflection && (
-            <form className="reflection-form" onSubmit={handleSaveReflection}>
-              <div className="form-group">
-                <label>How was your day? (1-10)</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={reflection.day_rating}
-                  onChange={(e) => setReflection({...reflection, day_rating: parseInt(e.target.value)})}
-                  required
-                />
-                <span className="range-value">{reflection.day_rating}</span>
-              </div>
-
-              <div className="form-group">
-                <label>Overall Mood</label>
-                <div className="mood-selector">
-                  {moodOptions.map(mood => (
-                    <button
-                      key={mood.value}
-                      type="button"
-                      className={`mood-option ${reflection.mood === mood.value ? 'selected' : ''}`}
-                      onClick={() => setReflection({...reflection, mood: mood.value})}
-                    >
-                      <span className="mood-emoji">{mood.emoji}</span>
-                      <span className="mood-label">{mood.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Mood Intensity (1-10)</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={reflection.mood_intensity}
-                  onChange={(e) => setReflection({...reflection, mood_intensity: parseInt(e.target.value)})}
-                  required
-                />
-                <span className="range-value">{reflection.mood_intensity}</span>
-              </div>
-
-              <div className="form-group">
-                <label>What are you grateful for today?</label>
-                <textarea
-                  value={reflection.gratitude}
-                  onChange={(e) => setReflection({...reflection, gratitude: e.target.value})}
-                  placeholder="Write something you're grateful for..."
-                  rows="3"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Additional Notes (Optional)</label>
-                <textarea
-                  value={reflection.notes}
-                  onChange={(e) => setReflection({...reflection, notes: e.target.value})}
-                  placeholder="Any additional thoughts..."
-                  rows="3"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="btn-primary">Save Reflection</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => setShowReflection(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-        </section>
-
-        {/* Habits Section */}
-        <section className="habits-section">
-          <div className="section-header">
-            <h2><TrendingUp size={20} /> Habit Tracker</h2>
-            <button 
-              className="btn-primary"
-              onClick={() => setShowAddHabit(!showAddHabit)}
-            >
-              <Plus size={18} /> Add Habit
-            </button>
+            <div className="stat-info">
+              <p className="stat-label">Total Reflections</p>
+              <p className="stat-number">{dashboardData.overview.total_reflections}</p>
+            </div>
           </div>
-
-          {showAddHabit && (
-            <form className="add-habit-form" onSubmit={handleAddHabit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Habit Name*</label>
-                  <input
-                    type="text"
-                    value={newHabit.name}
-                    onChange={(e) => setNewHabit({...newHabit, name: e.target.value})}
-                    placeholder="e.g., Drink water"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Tracking Type</label>
-                  <select
-                    value={newHabit.tracking_type}
-                    onChange={(e) => setNewHabit({
-                      ...newHabit, 
-                      tracking_type: e.target.value,
-                      target_value: e.target.value === 'boolean' ? 1 : newHabit.target_value
-                    })}
-                  >
-                    <option value="boolean">Yes/No (One-time)</option>
-                    <option value="counter">Counter (Multiple times)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Frequency</label>
-                  <select
-                    value={newHabit.frequency}
-                    onChange={(e) => setNewHabit({...newHabit, frequency: e.target.value})}
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
-
-                {newHabit.tracking_type === 'counter' && (
-                  <div className="form-group">
-                    <label>Target Value</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={newHabit.target_value}
-                      onChange={(e) => setNewHabit({...newHabit, target_value: parseInt(e.target.value)})}
-                      placeholder="e.g., 8 glasses"
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label>Color</label>
-                  <input
-                    type="color"
-                    value={newHabit.color}
-                    onChange={(e) => setNewHabit({...newHabit, color: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Description (Optional)</label>
-                <textarea
-                  value={newHabit.description}
-                  onChange={(e) => setNewHabit({...newHabit, description: e.target.value})}
-                  placeholder="Add a description..."
-                  rows="2"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="btn-primary">Add Habit</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => setShowAddHabit(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {habits.length === 0 ? (
-            <div className="empty-state">
-              <p>No habits yet. Start by adding your first habit!</p>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Flame size={24} strokeWidth={2} />
             </div>
-          ) : (
-            <div className="habits-grid">
-              {habits.map(habit => {
-                const log = getHabitLog(habit.id);
-                const percentage = getCompletionPercentage(habit);
-                
-                return (
-                  <div key={habit.id} className="habit-card">
-                    <div className="habit-header">
-                      <div className="habit-info">
-                        <div 
-                          className="habit-color" 
-                          style={{ backgroundColor: habit.color }}
-                        />
-                        <div>
-                          <h3>{habit.name}</h3>
-                          {habit.description && (
-                            <p className="habit-description">{habit.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        className="btn-icon"
-                        onClick={() => handleDeleteHabit(habit.id)}
-                        title="Delete habit"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-
-                    <div className="habit-progress">
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill" 
-                          style={{ 
-                            width: `${percentage}%`,
-                            backgroundColor: habit.color
-                          }}
-                        />
-                      </div>
-                      <span className="progress-text">
-                        {habit.tracking_type === 'counter' 
-                          ? `${log?.value || 0} / ${habit.target_value}`
-                          : log?.completed ? '✓ Completed' : 'Not done'
-                        }
-                      </span>
-                    </div>
-
-                    <div className="habit-actions">
-                      {habit.tracking_type === 'boolean' ? (
-                        <button
-                          className={`btn-log ${log?.completed ? 'completed' : ''}`}
-                          onClick={() => handleLogHabit(habit.id, 1)}
-                          disabled={log?.completed}
-                        >
-                          {log?.completed ? 'Done Today' : 'Mark as Done'}
-                        </button>
-                      ) : (
-                        <div className="counter-controls">
-                          <button
-                            className="btn-counter"
-                            onClick={() => handleLogHabit(habit.id, 1)}
-                          >
-                            +1
-                          </button>
-                          <button
-                            className="btn-counter"
-                            onClick={() => handleLogHabit(habit.id, -1)}
-                          >
-                            -1
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {habit.current_streak > 0 && (
-                      <div className="habit-streak">
-                        🔥 {habit.current_streak} day streak
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="stat-info">
+              <p className="stat-label">Day Streak</p>
+              <p className="stat-number">{dashboardData.overview.current_streak}</p>
             </div>
-          )}
-        </section>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Activity size={24} strokeWidth={2} />
+            </div>
+            <div className="stat-info">
+              <p className="stat-label">Active Questions</p>
+              <p className="stat-number">{dashboardData.questions.length}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts grouped by category */}
+        {Object.entries(groupedQuestions).map(([category, questions]) => (
+          <div key={category} className="category-section">
+            <h2 className="category-title">{category}</h2>
+            
+            {/* Range Questions */}
+            {questions.range.length > 0 && (
+              <div className="charts-grid">
+                {questions.range.map(question => renderRangeChart(question))}
+              </div>
+            )}
+
+            {/* Choice Questions */}
+            {questions.choice.length > 0 && (
+              <div className="charts-grid">
+                {questions.choice.map(question => renderChoiceChart(question))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
+    </>
   );
 };
 
