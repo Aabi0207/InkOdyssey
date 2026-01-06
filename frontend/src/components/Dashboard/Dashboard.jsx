@@ -159,8 +159,8 @@ const Dashboard = () => {
             >
               <defs>
                 <linearGradient id={`gradient-${question.question_id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2980B9" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#2980B9" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#e81123" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#e81123" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
@@ -180,53 +180,37 @@ const Dashboard = () => {
                 tickLine={false}
                 axisLine={false}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ stroke: '#e81123', strokeWidth: 1, strokeDasharray: '3 3' }}
+                animationDuration={0}
+                isAnimationActive={false}
+              />
               <Area 
                 type="monotone" 
                 dataKey="value" 
-                stroke="#2980B9" 
-                strokeWidth={3}
+                stroke="#e81123" 
+                strokeWidth={2}
                 fill={`url(#gradient-${question.question_id})`}
                 dot={{ 
-                  fill: '#2980B9', 
+                  fill: '#e81123', 
                   strokeWidth: 0, 
-                  r: 4 
+                  r: 3 
                 }}
                 activeDot={{ 
-                  r: 6, 
-                  fill: '#2980B9',
+                  r: 5, 
+                  fill: '#e81123',
                   stroke: '#fff',
-                  strokeWidth: 2
+                  strokeWidth: 2,
+                  style: { transition: 'all 0.2s ease' }
                 }}
                 connectNulls={false}
+                isAnimationActive={true}
+                animationDuration={800}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Distribution */}
-        {question.distribution && Object.keys(question.distribution).length > 0 && (
-          <div className="distribution-section">
-            <h4 className="distribution-title">Value Distribution</h4>
-            <div className="distribution-grid">
-              {Object.entries(question.distribution)
-                .filter(([_, data]) => data.count > 0)
-                .sort(([_, a], [__, b]) => b.count - a.count)
-                .map(([value, data]) => (
-                  <div key={value} className="distribution-item">
-                    <div 
-                      className="distribution-color" 
-                      style={{ backgroundColor: data.color }}
-                    />
-                    <span className="distribution-label">{value}</span>
-                    <span className="distribution-count">{data.count}x</span>
-                    <span className="distribution-percentage">{data.percentage}%</span>
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        )}
       </div>
     );
   };
