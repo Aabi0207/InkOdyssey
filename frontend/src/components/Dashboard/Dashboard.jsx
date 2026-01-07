@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
+import { Tooltip as ReactTooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 import { format, subDays, startOfYear, endOfYear, subYears, parseISO } from 'date-fns';
 import { TrendingUp, Calendar as CalendarIcon, BarChart3, ChevronLeft, ChevronRight, BookOpen, Flame, Activity } from 'lucide-react';
 import Navigation from '../Navigation/Navigation';
@@ -306,7 +308,8 @@ const Dashboard = () => {
                 return {};
               }
               return {
-                'data-tip': `${format(new Date(value.date), 'MMM dd, yyyy')}: ${value.choice || 'No response'}`
+                'data-tooltip-id': 'heatmap-tooltip',
+                'data-tooltip-content': `${format(new Date(value.date), 'MMM dd, yyyy')}: ${value.choice || 'No response'}`
               };
             }}
             transformDayElement={(element, value) => {
@@ -320,6 +323,29 @@ const Dashboard = () => {
                 });
               }
               return element;
+            }}
+          />
+          <ReactTooltip 
+            id="heatmap-tooltip" 
+            className="custom-tooltip"
+            style={{ 
+              backgroundColor: 'white', 
+              color: '#2c3e50',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              padding: '0.5rem 0.75rem',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+              opacity: 1
+            }}
+            render={({ content }) => {
+              if (!content) return null;
+              const [date, choice] = content.split(': ');
+              return (
+                <div>
+                  <p className="tooltip-date">{date}</p>
+                  <p className="tooltip-value">{choice}</p>
+                </div>
+              );
             }}
           />
         </div>
