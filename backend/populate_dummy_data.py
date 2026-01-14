@@ -56,6 +56,7 @@ def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
     
     range_questions = questions.filter(question_type='range')
     choice_questions = questions.filter(question_type='choice')
+    number_questions = questions.filter(question_type='number')
     
     for q in questions:
         print(f"  - {q.question_text} ({q.question_type})")
@@ -150,6 +151,36 @@ def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
             )
             response_count += 1
         
+        # Add responses for number questions
+        for question in number_questions:
+            # Generate realistic number patterns
+            if 'hour' in question.question_text.lower() or 'sleep' in question.question_text.lower():
+                # Sleep hours: typically 5-9 hours with variation
+                value = round(random.uniform(5.0, 9.5), 1)
+            elif 'calorie' in question.question_text.lower():
+                # Calories: 1500-2500 range
+                value = round(random.uniform(1500, 2500), 0)
+            elif 'water' in question.question_text.lower():
+                # Water intake: 1-4 liters
+                value = round(random.uniform(1.5, 4.0), 1)
+            elif 'weight' in question.question_text.lower():
+                # Weight: slight daily fluctuation around a base
+                base_weight = 70 + random.uniform(-5, 5)  # Base weight with individual variation
+                value = round(base_weight + random.uniform(-0.5, 0.5), 1)
+            elif 'step' in question.question_text.lower():
+                # Steps: 3000-15000 range
+                value = round(random.uniform(3000, 15000), 0)
+            else:
+                # Default: random float between 0-100
+                value = round(random.uniform(0, 100), 2)
+            
+            ReflectionResponse.objects.create(
+                daily_reflection=reflection,
+                question=question,
+                number_response=value
+            )
+            response_count += 1
+        
         print(f"  ✓ {date}: Created with {response_count} responses")
         created_count += 1
     
@@ -158,7 +189,7 @@ def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
     print(f"{'='*60}")
     print(f"✓ Created {created_count} new reflections")
     print(f"⊙ Skipped {skipped_count} days (existing or randomly omitted)")
-    print(f"📊 Total responses: {created_count * (range_questions.count() + choice_questions.count())}")
+    print(f"📊 Total responses: {created_count * (range_questions.count() + choice_questions.count() + number_questions.count())}")
     print(f"\n✓ Done! Your dashboard should now have plenty of data to visualize.\n")
 
 
