@@ -44,8 +44,8 @@ def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
         print(f"  Please provide an existing user email or create one first.")
         return
     
-    # Get active questions
-    questions = ReflectionQuestion.objects.filter(is_active=True)
+    # Get active questions for this user
+    questions = ReflectionQuestion.objects.filter(is_active=True, author=user)
     
     if not questions.exists():
         print(f"\n✗ No active questions found!")
