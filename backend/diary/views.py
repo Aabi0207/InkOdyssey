@@ -2,12 +2,13 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .models import DiaryEntry, ContentBlock
+from .models import DiaryEntry, ContentBlock, DiaryTag
 from .serializers import (
     DiaryEntrySerializer,
     DiaryEntryCreateSerializer,
     DiaryEntryListSerializer,
-    ContentBlockSerializer
+    ContentBlockSerializer,
+    DiaryTagSerializer,
 )
 
 
@@ -28,7 +29,7 @@ class DiaryEntryListCreateView(generics.ListCreateAPIView):
         """Return diary entries for the authenticated user only"""
         return DiaryEntry.objects.filter(
             author=self.request.user
-        ).prefetch_related('content_blocks')
+        ).prefetch_related('content_blocks', 'tags')
     
     def perform_create(self, serializer):
         """Set the author to the current user when creating"""
@@ -53,7 +54,7 @@ class DiaryEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
         """Return diary entries for the authenticated user only"""
         return DiaryEntry.objects.filter(
             author=self.request.user
-        ).prefetch_related('content_blocks')
+        ).prefetch_related('content_blocks', 'tags')
 
 
 class ContentBlockListCreateView(generics.ListCreateAPIView):
@@ -130,7 +131,7 @@ class DiaryEntryByDateView(APIView):
         entries = DiaryEntry.objects.filter(
             author=request.user,
             created_at__date=date
-        ).prefetch_related('content_blocks')
+        ).prefetch_related('content_blocks', 'tags')
         
         serializer = DiaryEntrySerializer(entries, many=True)
         return Response(serializer.data)
@@ -184,4 +185,20 @@ class DiaryStatsView(APIView):
             'total_blocks': total_blocks,
             'block_distribution': list(block_distribution)
         })
+
+
+class DiaryTagListCreateView(generics.ListCreateAPIView):
+    """
+    API endpoint for listing and creating diary tags.
+    GET /api/diary/tags/ - List all tags for authenticated user
+    POST /api/diary/tags/ - Create a new tag for authenticated user
+    """
+    serializer_class = DiaryTagSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return DiaryTag.objects.filter(author=self.request.user).order_by('name')
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
