@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 /* Diary Container */
 .diary-container {
@@ -1525,10 +1526,14 @@ textarea.form-control {
 .entry-tag {
   font-size: 0.75rem;
   padding: 0.15rem 0.6rem;
-  background: rgba(41, 128, 185, 0.08);
-  color: #2980B9;
+  background: #2c3e50;
+  color: #fff;
   border-radius: 50px;
   font-weight: 500;
+}
+
+.entry-tag:hover {
+  background: #1a252f;
 }
 
 .tag-input-wrapper {
@@ -1713,8 +1718,6 @@ textarea.form-control {
   }
 }
 
-/* === Base Adjustments === */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 html {
   --primary-color: #2980B9;
@@ -2045,10 +2048,11 @@ h6 {
   border: none;
   outline: none;
   font-size: 0.95rem;
-  font-family: inherit;
+  font-family: 'Poppins', sans-serif;
   flex: 1;
   min-width: 120px;
   background: transparent;
+  font-weight: 500;
 }
 
 /* Mobile Plus Button */

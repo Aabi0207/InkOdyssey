@@ -829,7 +829,7 @@ const Diary = () => {
                       <div className="entry-tags">
                         {entry.tags.map((tag, idx) => {
                           const tagName = typeof tag === 'string' ? tag : tag.name;
-                          return <span key={idx} className="entry-tag">#{tagName}</span>;
+                          return <span key={idx} className="entry-tag">{tagName}</span>;
                         })}
                       </div>
                     )}
