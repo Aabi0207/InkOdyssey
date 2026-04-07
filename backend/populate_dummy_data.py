@@ -22,7 +22,7 @@ from django.utils import timezone
 User = get_user_model()
 
 
-def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
+def create_dummy_data(user_email='dilip@gmail.com', days_back=90):
     """
     Create dummy reflection data for a user
     
@@ -193,7 +193,7 @@ def create_dummy_data(user_email='aabi@gmail.com', days_back=90):
     print(f"\n✓ Done! Your dashboard should now have plenty of data to visualize.\n")
 
 
-def clear_existing_data(user_email='aabi@gmail.com'):
+def clear_existing_data(user_email='dilip@gmail.com'):
     """
     Clear all existing reflection data for a user
     WARNING: This will delete all reflections and responses!
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Populate database with dummy reflection data')
-    parser.add_argument('--email', type=str, default='aabi@gmail.com', help='User email to create data for')
+    parser.add_argument('--email', type=str, default='dilip@gmail.com', help='User email to create data for')
     parser.add_argument('--days', type=int, default=90, help='Number of days back to generate data')
     parser.add_argument('--clear', action='store_true', help='Clear existing data before populating')
     
